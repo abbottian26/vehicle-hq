@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle HQ</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vehicle HQ">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-page: #f4f1ea;
+    --bg-panel: #ffffff;
+    --bg-card: #fafaf7;
+    --bg-elevated: #f0ece2;
+    --border: #d8d3c4;
+    --border-strong: #b8b09c;
+    --text-primary: #1f2329;
+    --text-secondary: #5a6270;
+    --text-muted: #8a8f9b;
+    --accent-yellow: #e8a900;
+    --accent-yellow-bg: #fff8e0;
+    --accent-red: #c63341;
+    --accent-red-bg: #fde8ea;
+    --accent-green: #2d8c5f;
+    --accent-green-bg: #e3f5ec;
+    --accent-blue: #1e7ba8;
+    --accent-blue-bg: #e0f0f8;
+    --accent-orange: #d8691f;
+    --accent-orange-bg: #fcedd9;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background:
+      radial-gradient(circle at top right, rgba(232, 169, 0, 0.08), transparent 50%),
+      radial-gradient(circle at bottom left, rgba(30, 123, 168, 0.05), transparent 50%),
+      var(--bg-page);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    padding: 1.5rem;
+    min-height: 100vh;
+  }
+  /* Caution stripe at top */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; height: 8px;
+    background: repeating-linear-gradient(
+      45deg,
+      var(--accent-yellow) 0px, var(--accent-yellow) 20px,
+      #1f2329 20px, #1f2329 40px
+    );
+    z-index: 100;
+  }
+  .app { max-width: 760px; margin: 0 auto; padding-top: 12px; }
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  .header-icon { font-size: 28px; }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+  .header-sub {
+    font-size: 12px;
+    color: var(--accent-orange);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .vehicle-bay {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .vtab {
+    flex: 1;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-panel);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+  .vtab:hover { border-color: var(--accent-yellow); color: var(--text-primary); }
+  .vtab.active {
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    border-color: var(--accent-yellow);
+    box-shadow: 0 0 0 1px var(--accent-yellow), 0 4px 12px rgba(232, 169, 0, 0.2);
+  }
+  .vtab.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--accent-yellow);
+  }
+  .vtab-emoji { font-size: 18px; margin-right: 6px; }
+  .vtab-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .section { margin-bottom: 1.5rem; }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 14px;
+    background: var(--accent-yellow);
+    border-radius: 2px;
+  }
+  .card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .metric-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, rgba(232, 169, 0, 0.08) 0%, transparent 70%);
+  }
+  .metric-icon {
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+  .metric-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .metric-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: 'SF Mono', Monaco, monospace;
+  }
+  .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-warn { background: var(--accent-orange-bg); color: var(--accent-orange); border: 1px solid var(--accent-orange); }
+  .badge-ok { background: var(--accent-green-bg); color: var(--accent-green); border: 1px solid var(--accent-green); }
+  .badge-info { background: var(--accent-blue-bg); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+  .badge-danger { background: var(--accent-red-bg); color: var(--accent-red); border: 1px solid var(--accent-red); }
+  .log-row, .reminder-row, .maint-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--border);
+    gap: 12px;
+  }
+  .log-row:last-child, .reminder-row:last-child, .maint-row:last-child {
+    border-bottom: none;
+  }
+  .log-desc, .remind-label, .maint-item-name {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .log-meta, .remind-sub, .maint-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .log-cost {
+    font-size: 14px;
+    color: var(--accent-orange);
+    font-weight: 700;
+    font-family: 'SF Mono', Monaco, monospace;
+    white-space: nowrap;
+  }
+  .ai-section {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    background: var(--bg-panel);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .ai-header {
+    padding: 12px 16px;
+    background: linear-gradient(90deg, var(--bg-elevated), var(--bg-card));
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+  }
+  .ai-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 8px var(--accent-green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .ai-chat {
+    padding: 12px 16px;
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .ai-msg { font-size: 13px; line-height: 1.5; }
+  .ai-msg.user {
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    padding: 8px 12px;
+    border-radius: 8px;
+    align-self: flex-end;
+    max-width: 80%;
+    border-left: 3px solid var(--accent-yellow);
+  }
+  .ai-msg.assistant { color: var(--text-primary); max-width: 90%; }
+  .ai-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .ai-input-row input {
+    flex: 1;
+    font-size: 13px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .ai-input-row input:focus { border-color: var(--accent-yellow); }
+  .ai-input-row input::placeholder { color: var(--text-muted); }
+  .ai-input-row button {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent-yellow);
+    color: var(--text-primary);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .ai-input-row button:hover { background: #f5b820; transform: translateY(-1px); }
+  .add-btn {
+    font-size: 11px;
+    padding: 5px 12px;
+    border: 1px solid var(--accent-yellow);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--accent-orange);
+    cursor: pointer;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .add-btn:hover { background: var(--accent-yellow-bg); }
+  .maint-note {
+    font-size: 11px;
+    color: var(--accent-orange);
+    margin-top: 2px;
+    font-style: italic;
+  }
+  .maint-group-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 10px 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .warranty-bar {
+    height: 8px;
+    background: var(--bg-elevated);
+    border-radius: 4px;
+    margin-top: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .warranty-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-yellow));
+    transition: width 0.3s;
+  }
+  .warranty-fill.warn { background: linear-gradient(90deg, var(--accent-yellow), var(--accent-orange)); }
+  .warranty-fill.danger { background: linear-gradient(90deg, var(--accent-orange), var(--accent-red)); }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 13px;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { color: var(--text-secondary); }
+  .detail-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-family: 'SF Mono', Monaco, monospace;
+  }
+  .typing { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .typing span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-orange);
+    animation: blink 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0.3} 40%{opacity:1} }
+
+  .garage-banner {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .garage-banner::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0; height: 3px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--accent-yellow) 0px, var(--accent-yellow) 12px,
+      var(--text-primary) 12px, var(--text-primary) 24px
+    );
+  }
+  .garage-banner-text {
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+  .vehicle-display {
+    font-size: 48px;
+    margin: 8px 0;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <span class="header-icon">🔧</span>
+    <div>
+      <h1>Ian's Garage</h1>
+      <div class="header-sub">Vehicle Service Center</div>
+    </div>
+  </div>
+
+  <div class="vehicle-bay" id="vehicle-tabs"></div>
+  <div id="vehicle-content"></div>
+</div>
+
+<script>
+const vehicles = [
+  {
+    id: 0,
+    name: "2021 Chrysler Pacifica",
+    trim: "Limited AWD",
+    emoji: "🚐",
+    vin: "2C4RC3GG6MR603629",
+    plate: "FE68293",
+    mileage: 57177,
+    warranty: {
+      basic: { label: "Basic (3yr/36k mi)", end: "2024", milesLimit: 36000, milesCurrent: 57177, expired: true },
+      powertrain: { label: "Powertrain (5yr/60k mi)", end: "2026", milesLimit: 60000, milesCurrent: 57177, expired: false }
+    },
+    insurance: {
+      carrier: "State Farm", policyNumber: "3548570-SFP-13", renewal: "2026-09-21",
+      semiAnnualPremium: 270.87, collisionDeductible: 500, compDeductible: 250,
+      rentalCoverage: "$50/day up to $1,200", roadService: true
+    },
+    registration: { renewal: "2027-03-31", plate: "FE68293", epaRequired: false },
+    serviceLog: [
+      { date: "2025-03-20", desc: "Brake replacement (all 4)", mileage: 57000, cost: 620, shop: "Dealer" },
+      { date: "2025-03-20", desc: "4 new tires + alignment", mileage: 57000, cost: 890, shop: "Dealer" }
+    ],
+    maintenance: [
+      { item: "Oil change", lastAt: null, interval: 7500, note: "Synthetic — confirm interval on oil cap" },
+      { item: "Cabin air filter", lastAt: 57177, interval: 20000, note: null },
+      { item: "Engine air filter", lastAt: 57177, interval: 30000, note: null },
+      { item: "Tire rotation", lastAt: 57111, interval: 7500, note: null },
+      { item: "Spark plugs", lastAt: null, interval: 60000, note: null },
+      { item: "Transmission fluid", lastAt: null, interval: 60000, note: "AWD — critical" },
+      { item: "Transfer case fluid", lastAt: null, interval: 60000, note: "AWD-specific, often missed" },
+      { item: "Coolant flush", lastAt: null, interval: 60000, note: null },
+      { item: "Serpentine belt inspection", lastAt: null, interval: 60000, note: null },
+      { item: "Brake fluid", lastAt: null, interval: 30000, note: "Time-based: every 2-3 years" },
+      { item: "Battery", lastAt: null, interval: null, note: "2021 — getting close to 4-5yr mark" },
+      { item: "Tire pressure check", lastAt: null, interval: null, note: "Monthly" }
+    ]
+  },
+  {
+    id: 1,
+    name: "2010 Toyota Venza",
+    trim: "FWD V6",
+    emoji: "🚙",
+    vin: "4T3ZK3BB0AU022479",
+    plate: "FE68294",
+    mileage: 133971,
+    warranty: {
+      basic: { label: "Basic (expired)", end: "2013", milesLimit: 36000, milesCurrent: 999999, expired: true },
+      powertrain: { label: "Powertrain (expired)", end: "2015", milesLimit: 60000, milesCurrent: 999999, expired: true }
+    },
+    insurance: {
+      carrier: "State Farm", policyNumber: "3548570-SFP-13", renewal: "2026-09-21",
+      semiAnnualPremium: 298.54, collisionDeductible: 500, compDeductible: 250,
+      rentalCoverage: null, roadService: false
+    },
+    registration: { renewal: "2027-03-31", plate: "FE68294", epaRequired: false },
+    serviceLog: [],
+    maintenance: [
+      { item: "Oil change", lastAt: null, interval: 5000, note: null },
+      { item: "Cabin air filter", lastAt: 133971, interval: 15000, note: null },
+      { item: "Engine air filter", lastAt: 133971, interval: 30000, note: null },
+      { item: "Tire rotation", lastAt: null, interval: 7500, note: null },
+      { item: "Spark plugs", lastAt: null, interval: 60000, note: "Iridium — longer interval" },
+      { item: "Transmission fluid", lastAt: null, interval: 30000, note: null },
+      { item: "Coolant flush", lastAt: null, interval: 50000, note: null },
+      { item: "Serpentine belt inspection", lastAt: null, interval: 60000, note: null },
+      { item: "Brake fluid", lastAt: null, interval: 30000, note: "Time-based: every 2-3 years" },
+      { item: "Battery", lastAt: null, interval: null, note: "2010 — replace soon if not done recently" },
+      { item: "Differential fluid", lastAt: null, interval: 30000, note: null },
+      { item: "Tire pressure check", lastAt: null, interval: null, note: "Monthly" }
+    ]
+  }
+];
+
+let activeVehicle = 0;
+let chatHistory = [[], []];
+
+function renderTabs() {
+  const tabsEl = document.getElementById('vehicle-tabs');
+  tabsEl.innerHTML = vehicles.map((v, i) => `
+    <button class="vtab ${i === activeVehicle ? 'active' : ''}" onclick="switchVehicle(${i})">
+      <div><span class="vtab-emoji">${v.emoji}</span><strong>${v.name}</strong></div>
+      <div class="vtab-meta">${v.trim} · ${v.mileage ? v.mileage.toLocaleString() + ' mi' : 'no mileage'}</div>
+    </button>
+  `).join('');
+}
+
+function switchVehicle(idx) {
+  activeVehicle = idx;
+  renderTabs();
+  render();
+}
+
+function maintStatus(item, miles) {
+  if (item.interval === null) return 'time';
+  if (!miles || item.lastAt === null) return 'unknown';
+  const rem = (item.lastAt + item.interval) - miles;
+  if (rem < 0) return 'danger';
+  if (rem < 1000) return 'warn';
+  return 'ok';
+}
+
+function statusBadge(s) {
+  if (s === 'ok') return '<span class="badge badge-ok">✓ OK</span>';
+  if (s === 'warn') return '<span class="badge badge-warn">⚠ Due Soon</span>';
+  if (s === 'unknown') return '<span class="badge badge-info">? Add Mileage</span>';
+  if (s === 'time') return '<span class="badge badge-warn">📅 Check Date</span>';
+  return '<span class="badge badge-danger">! Overdue</span>';
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatMonthYear(d) {
+  if (!d) return '—';
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
+function daysUntil(d) {
+  if (!d) return null;
+  return Math.round((new Date(d + 'T12:00:00') - new Date()) / 86400000);
+}
+
+function renewalBadge(d) {
+  const days = daysUntil(d);
+  if (days === null) return '<span class="badge badge-info">Add date</span>';
+  if (days < 0) return '<span class="badge badge-danger">Expired</span>';
+  if (days < 30) return '<span class="badge badge-danger">In ' + days + 'd</span>';
+  if (days < 90) return '<span class="badge badge-warn">In ' + days + 'd</span>';
+  return '<span class="badge badge-ok">In ' + days + 'd</span>';
+}
+
+function warrantyBadge(w) {
+  if (w.expired || w.milesCurrent >= w.milesLimit) return '<span class="badge badge-danger">Expired</span>';
+  const rem = w.milesLimit - w.milesCurrent;
+  if (rem < 3000) return '<span class="badge badge-warn">' + rem.toLocaleString() + ' mi left</span>';
+  return '<span class="badge badge-ok">' + rem.toLocaleString() + ' mi left</span>';
+}
+
+function warrantyPct(w) {
+  if (w.expired || w.milesCurrent >= w.milesLimit) return 100;
+  return Math.round((w.milesCurrent / w.milesLimit) * 100);
+}
+
+function render() {
+  const v = vehicles[activeVehicle];
+  const miles = v.mileage;
+  const totalCost = v.serviceLog.reduce((s, r) => s + r.cost, 0);
+  const overdueCount = v.maintenance.filter(m => maintStatus(m, miles) === 'danger').length;
+  const warnCount = v.maintenance.filter(m => ['warn','time'].includes(maintStatus(m, miles))).length;
+
+  let html = '';
+
+  html += `<div class="garage-banner">
+    <div class="vehicle-display">${v.emoji}</div>
+    <div class="garage-banner-text">
+      ┌───────────────────────────────┐<br>
+      │  BAY ${v.id + 1}  ·  ${v.name.padEnd(22)}│<br>
+      │  VIN: ${v.vin.slice(-8)}  ·  PLATE: ${v.plate}  │<br>
+      └───────────────────────────────┘
+    </div>
+  </div>`;
+
+  html += '<div class="cards-grid">';
+  html += `<div class="metric-card"><div class="metric-icon">🛣️</div><div class="metric-label">Odometer</div><div class="metric-value">${miles ? miles.toLocaleString() : '—'}</div><div class="metric-sub">miles on the clock</div></div>`;
+  html += `<div class="metric-card"><div class="metric-icon">🛡️</div><div class="metric-label">Insurance</div><div class="metric-value">$${v.insurance.semiAnnualPremium.toFixed(0)}</div><div class="metric-sub">per 6 months</div></div>`;
+  html += `<div class="metric-card"><div class="metric-icon">💰</div><div class="metric-label">Service Spend</div><div class="metric-value">$${totalCost.toLocaleString()}</div><div class="metric-sub">${v.serviceLog.length} jobs logged</div></div>`;
+  const alertEmoji = overdueCount > 0 ? '🚨' : warnCount > 0 ? '⚠️' : '✅';
+  const alertLabel = overdueCount > 0 ? overdueCount + ' overdue' : warnCount > 0 ? warnCount + ' need attention' : 'All clear';
+  html += `<div class="metric-card"><div class="metric-icon">${alertEmoji}</div><div class="metric-label">Alerts</div><div class="metric-value">${overdueCount + warnCount}</div><div class="metric-sub">${alertLabel}</div></div>`;
+  html += '</div>';
+
+  html += `<div class="ai-section">
+    <div class="ai-header"><div class="ai-dot"></div>🔧 Mechanic Claude — On Duty</div>
+    <div class="ai-chat" id="ai-chat-${v.id}">`;
+  if (chatHistory[v.id].length === 0) {
+    html += `<div class="ai-msg assistant" style="color:var(--text-secondary)">Whaddya need, boss? Ask me anything about your ${v.name} — what's due, what that noise means, or what your warranty covers.</div>`;
+  } else {
+    chatHistory[v.id].forEach(m => { html += `<div class="ai-msg ${m.role}">${m.content}</div>`; });
+  }
+  html += `</div>
+    <div class="ai-input-row">
+      <input type="text" id="ai-input-${v.id}" placeholder="What's that grinding sound? When's my next oil change?..." onkeydown="if(event.key==='Enter')sendAI(${v.id})" />
+      <button onclick="sendAI(${v.id})">Ask 🔧</button>
+    </div>
+  </div>`;
+
+  html += `<div class="section">
+    <div class="section-header"><span class="section-title">📋 Service Log</span><button class="add-btn" onclick="promptAdd(${v.id})">+ Log Service</button></div>
+    <div class="card">`;
+  if (v.serviceLog.length === 0) {
+    html += `<div style="color:var(--text-muted);font-size:13px;padding:12px 0;text-align:center;font-style:italic">🔍 No service records yet. Log your first job above.</div>`;
+  } else {
+    v.serviceLog.slice().reverse().forEach(r => {
+      html += `<div class="log-row"><div><div class="log-desc">🔩 ${r.desc}</div><div class="log-meta">${formatDate(r.date)} · ${r.mileage.toLocaleString()} mi · ${r.shop}</div></div><div class="log-cost">$${r.cost.toLocaleString()}</div></div>`;
+    });
+  }
+  html += '</div></div>';
+
+  html += `<div class="section">
+    <div class="section-header"><span class="section-title">⚙️ Maintenance Schedule</span></div>
+    <div class="card">`;
+
+  const mileageBased = v.maintenance.filter(m => m.interval !== null);
+  const timeBased = v.maintenance.filter(m => m.interval === null);
+
+  if (mileageBased.length) {
+    html += `<div class="maint-group-label">🛣️ Mileage-based</div>`;
+    mileageBased.forEach(m => {
+      const st = maintStatus(m, miles);
+      const nextDue = m.lastAt !== null ? (m.lastAt + m.interval).toLocaleString() + ' mi' : '—';
+      html += `<div class="maint-row"><div style="flex:1"><div class="maint-item-name">${m.item}</div><div class="maint-meta">Every ${m.interval.toLocaleString()} mi · Next: ${nextDue}</div>${m.note ? `<div class="maint-note">⚠ ${m.note}</div>` : ''}</div>${statusBadge(st)}</div>`;
+    });
+  }
+
+  if (timeBased.length) {
+    html += `<div class="maint-group-label" style="margin-top:12px">📅 Time / Condition-based</div>`;
+    timeBased.forEach(m => {
+      html += `<div class="maint-row"><div style="flex:1"><div class="maint-item-name">${m.item}</div>${m.note ? `<div class="maint-note">⚠ ${m.note}</div>` : ''}</div>${statusBadge('time')}</div>`;
+    });
+  }
+
+  html += '</div></div>';
+
+  html += `<div class="section">
+    <div class="section-header"><span class="section-title">🛡️ Warranty Status</span></div>
+    <div class="card">`;
+  Object.values(v.warranty).forEach(w => {
+    const pct = warrantyPct(w);
+    const fillClass = pct >= 100 ? 'danger' : pct > 80 ? 'warn' : '';
+    html += `<div class="reminder-row"><div style="flex:1"><div class="remind-label">${w.label}</div><div class="remind-sub">Expires ${w.end} · ${pct}% used</div><div class="warranty-bar"><div class="warranty-fill ${fillClass}" style="width:${pct}%"></div></div></div><div style="margin-left:16px">${warrantyBadge(w)}</div></div>`;
+  });
+  html += '</div></div>';
+
+  const ins = v.insurance;
+  html += `<div class="section">
+    <div class="section-header"><span class="section-title">🛡️ Insurance</span></div>
+    <div class="card">
+      <div class="reminder-row">
+        <div><div class="remind-label">${ins.carrier} — Auto Policy</div><div class="remind-sub">Policy ${ins.policyNumber} · Renews ${formatDate(ins.renewal)}</div></div>
+        ${renewalBadge(ins.renewal)}
+      </div>
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+        <div class="detail-row"><span class="detail-label">💵 Semi-annual premium</span><span class="detail-value">$${ins.semiAnnualPremium.toFixed(2)}</span></div>
+        <div class="detail-row"><span class="detail-label">💥 Collision deductible</span><span class="detail-value">$${ins.collisionDeductible}</span></div>
+        <div class="detail-row"><span class="detail-label">🌧️ Comprehensive deductible</span><span class="detail-value">$${ins.compDeductible}</span></div>
+        <div class="detail-row"><span class="detail-label">🚗 Rental coverage</span><span class="detail-value">${ins.rentalCoverage || 'Not included'}</span></div>
+        <div class="detail-row"><span class="detail-label">🆘 Emergency road service</span><span class="detail-value">${ins.roadService ? 'Included' : 'Not included'}</span></div>
+      </div>
+    </div>
+  </div>`;
+
+  const reg = v.registration;
+  html += `<div class="section">
+    <div class="section-header"><span class="section-title">📋 Registration</span></div>
+    <div class="card">
+      <div class="reminder-row">
+        <div><div class="remind-label">🏛️ IL Registration</div><div class="remind-sub">Plate ${reg.plate} · Expires ${formatMonthYear(reg.renewal)} · EPA test not required</div></div>
+        ${renewalBadge(reg.renewal)}
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('vehicle-content').innerHTML = html;
+  scrollChatBottom(v.id);
+}
+
+function scrollChatBottom(id) {
+  const el = document.getElementById('ai-chat-' + id);
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+function promptAdd(vehicleId) {
+  const input = document.getElementById('ai-input-' + vehicleId);
+  input.value = 'Add service: ';
+  input.focus();
+}
+
+async function sendAI(vehicleId) {
+  const v = vehicles[vehicleId];
+  const input = document.getElementById('ai-input-' + vehicleId);
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+
+  chatHistory[vehicleId].push({ role: 'user', content: question });
+  const chatEl = document.getElementById('ai-chat-' + vehicleId);
+  chatEl.innerHTML += `<div class="ai-msg user">${question}</div>`;
+  chatEl.innerHTML += `<div class="ai-msg assistant typing" id="typing-${vehicleId}"><span></span><span></span><span></span></div>`;
+  scrollChatBottom(vehicleId);
+
+  const ins = v.insurance;
+  const reg = v.registration;
+  const systemPrompt = `You are a friendly, knowledgeable mechanic. The user owns a ${v.name} ${v.trim} (VIN: ${v.vin}, plate: ${v.plate}).
+Mileage: ${v.mileage ? v.mileage.toLocaleString() + ' miles' : 'unknown'}.
+Recent service: ${v.serviceLog.map(s => s.desc + ' at ' + s.mileage + ' mi (' + s.date + ')').join(', ') || 'none logged'}.
+Maintenance items: ${v.maintenance.map(m => m.item + (m.interval ? ', every ' + m.interval + ' mi, last at ' + (m.lastAt !== null ? m.lastAt.toLocaleString() : 'unknown') : ' (time/condition-based)')).join('; ')}.
+Warranty: Basic expired. Powertrain 5yr/60k — ${v.warranty.powertrain.expired ? 'expired' : (v.warranty.powertrain.milesLimit - v.warranty.powertrain.milesCurrent).toLocaleString() + ' miles remaining'}.
+Insurance: ${ins.carrier}, renews ${ins.renewal}, $${ins.semiAnnualPremium}/6mo. Collision $${ins.collisionDeductible}, comp $${ins.compDeductible}. Rental: ${ins.rentalCoverage || 'none'}. Road service: ${ins.roadService ? 'yes' : 'no'}.
+Registration: Plate ${reg.plate}, expires ${reg.renewal}.
+Talk like a helpful but no-nonsense mechanic. Be concise and direct. 2-4 sentences max unless a list is genuinely needed.`;
+
+  const messages = [
+    ...chatHistory[vehicleId].slice(0, -1).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
+    { role: 'user', content: question }
+  ];
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: systemPrompt, messages })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Something went wrong.';
+    chatHistory[vehicleId].push({ role: 'assistant', content: reply });
+    const typingEl = document.getElementById('typing-' + vehicleId);
+    if (typingEl) typingEl.outerHTML = `<div class="ai-msg assistant">${reply}</div>`;
+    scrollChatBottom(vehicleId);
+  } catch(e) {
+    const typingEl = document.getElementById('typing-' + vehicleId);
+    if (typingEl) typingEl.outerHTML = `<div class="ai-msg assistant" style="color:var(--accent-red)">Error connecting to Claude API.</div>`;
+  }
+}
+
+renderTabs();
+render();
+</script>
+</body>
+</html>
